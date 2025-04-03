@@ -1,5 +1,5 @@
 const { User } = require("../models/index");
-const bcrypt = require("bcrypt");
+const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 class UserController {
@@ -63,7 +63,7 @@ class UserController {
 
       // Nếu có mật khẩu mới, mã hóa trước khi lưu
       if (password) {
-        updateData.password = await bcrypt.hash(password, 10);
+        updateData.password = await bcryptjs.hash(password, 10);
       }
 
       // Cập nhật thông tin user
@@ -91,7 +91,7 @@ class UserController {
         });
       }
 
-      const isMatch = await bcrypt.compare(password, user.password);
+      const isMatch = await bcryptjs.compare(password, user.password);
       if (!isMatch) {
         return res.status(401).json({
           message: "Sai tên đăng nhập hoặc mật khẩu",
@@ -156,7 +156,7 @@ class UserController {
       }
 
       // Mã hóa mật khẩu trước khi lưu
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcryptjs.hash(password, 10);
 
       // Tạo user mới
       const newUser = await User.create({
