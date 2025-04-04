@@ -82,8 +82,10 @@ class UserController {
 
   async login(req, res) {
     const { email, password } = req.body;
+
     try {
       const user = await User.findOne({ where: { email } });
+
       if (!user) {
         return res.status(404).json({
           message: "Sai tên đăng nhập hoặc mật khẩu",
@@ -91,7 +93,7 @@ class UserController {
         });
       }
 
-      const isMatch = await bcryptjs.compare(password, user.password);
+      const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
         return res.status(401).json({
           message: "Sai tên đăng nhập hoặc mật khẩu",
@@ -99,35 +101,43 @@ class UserController {
         });
       }
 
-      // 🔹 Tạo Access Token (hết hạn sau 1 giờ)
+      // 🔐 Tạo Access Token (hết hạn 1h)
       const accessToken = jwt.sign(
         { id: user.id, email: user.email, role: user.role },
         process.env.JWT_SECRET,
         { expiresIn: "1h" }
       );
 
-      // 🔹 Tạo Refresh Token (hết hạn sau 7 ngày)
+      // 🔐 Tạo Refresh Token (hết hạn 7 ngày)
       const refreshToken = jwt.sign(
         { id: user.id },
         process.env.JWT_REFRESH_SECRET,
         { expiresIn: "7d" }
       );
 
-      // 🏷️ Lưu các thông tin vào cookie
+      // ✅ Thiết lập cookie: phải là SameSite=None + Secure để gửi cross-origin
       const cookieOptions = {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Lax",
+        secure: true, // luôn dùng HTTPS với Render
+        sameSite: "None", // cần thiết cho cookie cross-site
         path: "/",
       };
 
       res.cookie("refreshToken", refreshToken, cookieOptions);
       res.cookie("accessToken", accessToken, cookieOptions);
 
-      // ✅ Thêm userRole và userName vào cookie
-      res.cookie("userRole", user.role, { ...cookieOptions, httpOnly: false });
-      res.cookie("userName", user.name, { ...cookieOptions, httpOnly: false });
+      // 👀 Cookie hiển thị ở FE (không httpOnly)
+      res.cookie("userRole", user.role, {
+        ...cookieOptions,
+        httpOnly: false,
+      });
 
+      res.cookie("userName", user.name, {
+        ...cookieOptions,
+        httpOnly: false,
+      });
+
+      // ✅ Phản hồi thành công
       res.status(200).json({
         message: "Đăng nhập thành công",
         response: true,
