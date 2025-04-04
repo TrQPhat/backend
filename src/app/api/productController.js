@@ -1,10 +1,12 @@
-const { Product,Ingredient,ProductIngredient } = require("../models");
+const { Product, Ingredient, ProductIngredient } = require("../models");
 
 class ProductController {
   //   1. Lấy danh sách sản phẩm
   async getAllProducts(req, res) {
     try {
-      const products = await Product.findAll();
+      const products = await Product.findAll({
+        where: { isAvailable: true },
+      });
       res.status(200).json({ response: true, products });
     } catch (error) {
       res.status(500).json({ response: false, message: "Lỗi server", error });
@@ -151,11 +153,13 @@ class ProductController {
   async getBothDetail(req, res) {
     try {
       const { ProductID, IngredientID } = req.params;
-      console.log(ProductID,IngredientID)
+      console.log(ProductID, IngredientID);
       if (!ProductID || !IngredientID) {
-        return res.status(400).json({ message: "Thiếu ProductID hoặc IngredientID" });
+        return res
+          .status(400)
+          .json({ message: "Thiếu ProductID hoặc IngredientID" });
       }
-  
+
       const detail = await ProductIngredient.findOne({
         where: { product_id: ProductID, ingredient_id: IngredientID },
         include: [
@@ -163,18 +167,17 @@ class ProductController {
           { model: Ingredient, as: "ingredient" }, // Dùng alias "ingredient" đã khai báo
         ],
       });
-  
+
       if (!detail) {
         return res.status(404).json({ message: "Không tìm thấy dữ liệu" });
       }
-  
+
       res.json(detail);
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Lỗi server" });
     }
   }
-  
 }
 
 module.exports = new ProductController();
